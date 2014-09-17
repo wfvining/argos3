@@ -110,7 +110,7 @@ namespace argos {
          /* LED equipped entity, with LEDs [0-11] and beacon [12] */
          m_pcLEDEquippedEntity = new CLEDEquippedEntity(this,
                                                         "leds_0",
-                                                        m_pcEmbodiedEntity);
+                                                        m_pcEmbodiedEntity->GetAnchor("origin"));
          AddComponent(*m_pcLEDEquippedEntity);
          for(UInt32 i = 0; i < 13; ++i) {
             m_pcLEDEquippedEntity->AddLED(CVector3());
@@ -120,7 +120,8 @@ namespace argos {
          /* Proximity sensor equipped entity */
          m_pcProximitySensorEquippedEntity =
             new CProximitySensorEquippedEntity(this,
-                                               "proximity_0");
+                                               "proximity_0",
+                                               m_pcEmbodiedEntity->GetAnchor("origin"));
          AddComponent(*m_pcProximitySensorEquippedEntity);
          m_pcProximitySensorEquippedEntity->AddSensorRing(
             CVector3(0.0f, 0.0f, PROXIMITY_SENSOR_RING_ELEVATION),
@@ -149,7 +150,8 @@ namespace argos {
          /* Ground sensor equipped entity */
          m_pcGroundSensorEquippedEntity =
             new CGroundSensorEquippedEntity(this,
-                                            "ground_0");
+                                            "ground_0",
+                                            m_pcEmbodiedEntity->GetAnchor("origin"));
          AddComponent(*m_pcGroundSensorEquippedEntity);
          m_pcGroundSensorEquippedEntity->AddSensor(CVector2(0.063, 0.0116),
                                                    CGroundSensorEquippedEntity::TYPE_GRAYSCALE);
