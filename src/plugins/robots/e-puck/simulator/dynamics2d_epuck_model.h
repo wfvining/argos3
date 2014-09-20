@@ -27,9 +27,6 @@ namespace argos {
                               CEPuckEntity& c_entity);
       virtual ~CDynamics2DEPuckModel();
       
-      virtual bool CheckIntersectionWithRay(Real& f_t_on_ray,
-                                            const CRay3& c_ray) const;
-
       virtual bool MoveTo(const CVector3& c_position,
                           const CQuaternion& c_orientation,
                           bool b_check_only = false);
@@ -38,10 +35,11 @@ namespace argos {
 
       virtual void CalculateBoundingBox();
 
-      virtual void UpdateEntityStatus();
       virtual void UpdateFromEntityStatus();
 
       virtual bool IsCollidingWithSomething() const;
+
+      void UpdateOriginAnchor(SAnchor& s_anchor);
 
    private:
 

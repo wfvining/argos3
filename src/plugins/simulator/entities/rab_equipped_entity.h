@@ -9,11 +9,13 @@
 
 namespace argos {
    class CRABEquippedEntity;
+   class CEmbodiedEntity;
+   struct SAnchor;
 }
 
 #include <argos3/core/utility/datatypes/byte_array.h>
 #include <argos3/core/utility/datatypes/set.h>
-#include <argos3/core/simulator/entity/embodied_entity.h>
+#include <argos3/core/simulator/entity/positional_entity.h>
 #include <argos3/core/utility/math/vector3.h>
 #include <argos3/core/simulator/space/positional_indices/space_hash.h>
 #include <argos3/core/simulator/space/positional_indices/grid.h>
@@ -37,7 +39,8 @@ namespace argos {
                          const std::string& str_id,
                          size_t un_msg_size,
                          Real f_range,
-                         CEmbodiedEntity& c_reference,
+                         const SAnchor& s_anchor,
+                         CEmbodiedEntity& c_entity_body,
                          const CVector3& c_position = CVector3(),
                          const CQuaternion& c_orientation = CQuaternion());
 
@@ -48,6 +51,10 @@ namespace argos {
       virtual void Reset();
 
       virtual void Update();
+
+      inline CEmbodiedEntity& GetEntityBody() {
+         return *m_pcEntityBody;
+      }
 
       inline size_t GetMsgSize() const {
          return m_cData.Size();
@@ -65,8 +72,8 @@ namespace argos {
          return m_fRange;
       }
 
-      inline CEmbodiedEntity& GetReference() {
-         return *m_pcReference;
+      inline const SAnchor& GetAnchor() const {
+         return *m_psAnchor;
       }
 
       virtual std::string GetTypeDescription() const {
@@ -75,11 +82,12 @@ namespace argos {
 
    protected:
 
-      CEmbodiedEntity* m_pcReference;
+      const SAnchor* m_psAnchor;
       CVector3 m_cPosOffset;
       CQuaternion m_cRotOffset;
       CByteArray m_cData;
       Real m_fRange;
+      CEmbodiedEntity* m_pcEntityBody;
 
    };
 

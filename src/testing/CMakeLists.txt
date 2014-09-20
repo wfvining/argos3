@@ -55,10 +55,12 @@ if(ARGOS_BUILD_FOR_SIMULATOR AND GOOGLEPERFTOOLS_FOUND)
     tcmalloc profiler
     argos3core_simulator
     argos3plugin_simulator_footbot
+    argos3plugin_simulator_miniquadrotor
     argos3plugin_simulator_genericrobot
     argos3plugin_simulator_qtopengl
     argos3plugin_simulator_sensors
     argos3plugin_simulator_entities
     argos3plugin_simulator_dynamics2d
+    argos3plugin_simulator_physx
     argos3plugin_simulator_actuators)
 endif(ARGOS_BUILD_FOR_SIMULATOR AND GOOGLEPERFTOOLS_FOUND)

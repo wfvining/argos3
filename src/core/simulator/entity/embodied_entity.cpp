@@ -16,26 +16,11 @@ namespace argos {
    /****************************************/
    /****************************************/
 
-   CEmbodiedEntity::SAnchor::SAnchor(const std::string& str_id,
-                                     const CVector3& c_offset_position,
-                                     const CQuaternion& c_offset_orientation,
-                                     const CVector3& c_position,
-                                     const CQuaternion& c_orientation) :
-      Id(str_id),
-      OffsetPosition(c_offset_position),
-      OffsetOrientation(c_offset_orientation),
-      Position(c_position),
-      Orientation(c_orientation),
-      InUseCount(0) {
-   }
-
-   /****************************************/
-   /****************************************/
-
    CEmbodiedEntity::CEmbodiedEntity(CComposableEntity* pc_parent) :
-      CPositionalEntity(pc_parent),
+      CEntity(pc_parent),
       m_bMovable(true),
-      m_sBoundingBox(NULL) {}
+      m_sBoundingBox(NULL),
+      m_psOriginAnchor(NULL) {}
 
    /****************************************/
    /****************************************/
@@ -45,12 +30,21 @@ namespace argos {
                                     const CVector3& c_position,
                                     const CQuaternion& c_orientation,
                                     bool b_movable) :
-      CPositionalEntity(pc_parent,
-                        str_id,
-                        c_position,
-                        c_orientation),
+      CEntity(pc_parent, str_id),
       m_bMovable(b_movable),
-      m_sBoundingBox(NULL) {}
+      m_sBoundingBox(NULL),
+      m_psOriginAnchor(new SAnchor("origin",
+                                   0,
+                                   CVector3(),
+                                   CQuaternion(),
+                                   c_position,
+                                   c_orientation)),
+      m_cInitOriginPosition(c_position),
+      m_cInitOriginOrientation(c_orientation) {
+      /* Add anchor to map and enable it */
+      m_mapAnchors[m_psOriginAnchor->Id] = m_psOriginAnchor;
+      EnableAnchor("origin");
+   }
 
    /****************************************/
    /****************************************/
@@ -72,11 +66,27 @@ namespace argos {
 
    void CEmbodiedEntity::Init(TConfigurationNode& t_tree) {
       try {
-         CPositionalEntity::Init(t_tree);
+         /* Initialize base entity */
+         CEntity::Init(t_tree);
+         /* Get the position of the entity */
+         GetNodeAttributeOrDefault(t_tree, "position", m_cInitOriginPosition, CVector3());
+         /* Get the orientation of the entity */
+         GetNodeAttributeOrDefault(t_tree, "orientation", m_cInitOriginOrientation, CQuaternion());
+         /* Create origin anchor */
+         m_psOriginAnchor = new SAnchor("origin",
+                                        0,
+                                        CVector3(),
+                                        CQuaternion(),
+                                        m_cInitOriginPosition,
+                                        m_cInitOriginOrientation);
+         /* Add anchor to map and enable it */
+         m_mapAnchors[m_psOriginAnchor->Id] = m_psOriginAnchor;
+         EnableAnchor("origin");
+         /* Embodied entities are movable by default */
          m_bMovable = true;
       }
       catch(CARGoSException& ex) {
-         THROW_ARGOSEXCEPTION_NESTED("Failed to initialize embodied entity \"" << GetId() << "\".", ex);
+         THROW_ARGOSEXCEPTION_NESTED("Failed to initialize embodied entity \"" << GetContext() << GetId() << "\".", ex);
       }
    }
 
@@ -84,19 +94,22 @@ namespace argos {
    /****************************************/
 
    void CEmbodiedEntity::Reset() {
-      /* Reset position and orientation */
-      CPositionalEntity::Reset();
-      /* Reset anchors */
+      /* Reset origin anchor first */
+      m_psOriginAnchor->Position = m_cInitOriginPosition;
+      m_psOriginAnchor->Orientation = m_cInitOriginOrientation;
+      /* Reset other anchors */
       SAnchor* psAnchor;
       for(std::map<std::string, SAnchor*>::iterator it = m_mapAnchors.begin();
           it != m_mapAnchors.end(); ++it) {
          /* it->second points to the current anchor */
          psAnchor = it->second;
-         /* Calculate global position and orientation */
-         psAnchor->Position = psAnchor->OffsetPosition;
-         psAnchor->Position.Rotate(GetOrientation());
-         psAnchor->Position += GetPosition();
-         psAnchor->Orientation = GetOrientation() * psAnchor->OffsetOrientation;
+         if(psAnchor->Index > 0) {
+            /* Calculate global position and orientation */
+            psAnchor->Position = psAnchor->OffsetPosition;
+            psAnchor->Position.Rotate(m_cInitOriginOrientation);
+            psAnchor->Position += m_cInitOriginPosition;
+            psAnchor->Orientation = m_cInitOriginOrientation * psAnchor->OffsetOrientation;
+         }
       }
    }
 
@@ -112,12 +125,13 @@ namespace argos {
       }
       /* Calculate anchor position */
       CVector3 cPos = c_offset_position;
-      cPos.Rotate(GetOrientation());
-      cPos += GetPosition();
+      cPos.Rotate(m_psOriginAnchor->Orientation);
+      cPos += m_psOriginAnchor->Position;
       /* Calculate anchor orientation */
-      CQuaternion cOrient = GetOrientation() * c_offset_orientation;
+      CQuaternion cOrient = m_psOriginAnchor->Orientation * c_offset_orientation;
       /* Create anchor */
       SAnchor* psAnchor = new SAnchor(str_id,
+                                      m_mapAnchors.size(),
                                       c_offset_position,
                                       c_offset_orientation,
                                       cPos,
@@ -169,9 +183,23 @@ namespace argos {
    /****************************************/
    /****************************************/
 
-   const CEmbodiedEntity::SAnchor& CEmbodiedEntity::GetAnchor(const std::string& str_id) const {
+   const SAnchor& CEmbodiedEntity::GetAnchor(const std::string& str_id) const {
       /* Lookup the anchor id */
       std::map<std::string, SAnchor*>::const_iterator it = m_mapAnchors.find(str_id);
+      /* Found? */
+      if(it == m_mapAnchors.end()) {
+         THROW_ARGOSEXCEPTION("Embodied entity \"" << GetContext() + GetId() << "\" has no anchor with id " << str_id);
+      }
+      /* Now it->second points to the requested anchor */
+      return *(it->second);
+   }
+
+   /****************************************/
+   /****************************************/
+
+   SAnchor& CEmbodiedEntity::GetAnchor(const std::string& str_id) {
+      /* Lookup the anchor id */
+      std::map<std::string, SAnchor*>::iterator it = m_mapAnchors.find(str_id);
       /* Found? */
       if(it == m_mapAnchors.end()) {
          THROW_ARGOSEXCEPTION("Embodied entity \"" << GetContext() + GetId() << "\" has no anchor with id " << str_id);
@@ -200,7 +228,7 @@ namespace argos {
    const SBoundingBox& CEmbodiedEntity::GetBoundingBox() const {
       if(GetPhysicsModelsNum() == 0) {
          /* No engine associated to this entity */
-         THROW_ARGOSEXCEPTION("CEmbodiedEntity::GetBoundingBox() : entity \"" << GetId() << "\" is not associated to any engine");
+         THROW_ARGOSEXCEPTION("CEmbodiedEntity::GetBoundingBox() : entity \"" << GetContext() << GetId() << "\" is not associated to any engine");
       }
       return *m_sBoundingBox;
    }
@@ -218,7 +246,7 @@ namespace argos {
    void CEmbodiedEntity::AddPhysicsModel(const std::string& str_engine_id,
                                          CPhysicsModel& c_physics_model) {
       if(m_bMovable && GetPhysicsModelsNum() > 0) {
-         THROW_ARGOSEXCEPTION(GetId() << " is movable embodied entity and can't have more than 1 physics engine entity associated");
+         THROW_ARGOSEXCEPTION(GetContext() << GetId() << " is movable embodied entity and can't have more than 1 physics engine entity associated");
       }
       m_tPhysicsModelMap[str_engine_id] = &c_physics_model;
       m_tPhysicsModelVector.push_back(&c_physics_model);
@@ -231,7 +259,7 @@ namespace argos {
    void CEmbodiedEntity::RemovePhysicsModel(const std::string& str_engine_id) {
       CPhysicsModel::TMap::iterator itMap = m_tPhysicsModelMap.find(str_engine_id);
       if(itMap == m_tPhysicsModelMap.end()) {
-         THROW_ARGOSEXCEPTION("Entity \"" << GetId() << "\" has no associated entity in physics engine " << str_engine_id);
+         THROW_ARGOSEXCEPTION("Entity \"" << GetContext() << GetId() << "\" has no associated entity in physics engine " << str_engine_id);
       }
       CPhysicsModel::TVector::iterator itVec = std::find(m_tPhysicsModelVector.begin(),
                                                          m_tPhysicsModelVector.end(),
@@ -246,7 +274,7 @@ namespace argos {
 
    const CPhysicsModel& CEmbodiedEntity::GetPhysicsModel(size_t un_idx) const {
       if(un_idx > m_tPhysicsModelVector.size()) {
-         THROW_ARGOSEXCEPTION("CEmbodiedEntity::GetPhysicsModel: entity \"" << GetId() << "\": the passed index " << un_idx << " is out of bounds, the max allowed is " << m_tPhysicsModelVector.size());
+         THROW_ARGOSEXCEPTION("CEmbodiedEntity::GetPhysicsModel: entity \"" << GetContext() << GetId() << "\": the passed index " << un_idx << " is out of bounds, the max allowed is " << m_tPhysicsModelVector.size());
       }
       return *m_tPhysicsModelVector[un_idx];
    }
@@ -256,7 +284,7 @@ namespace argos {
 
    CPhysicsModel& CEmbodiedEntity::GetPhysicsModel(size_t un_idx) {
       if(un_idx > m_tPhysicsModelVector.size()) {
-         THROW_ARGOSEXCEPTION("CEmbodiedEntity::GetPhysicsModel: entity \"" << GetId() << "\": the passed index " << un_idx << " is out of bounds, the max allowed is " << m_tPhysicsModelVector.size());
+         THROW_ARGOSEXCEPTION("CEmbodiedEntity::GetPhysicsModel: entity \"" << GetContext() << GetId() << "\": the passed index " << un_idx << " is out of bounds, the max allowed is " << m_tPhysicsModelVector.size());
       }
       return *m_tPhysicsModelVector[un_idx];
    }
@@ -267,7 +295,7 @@ namespace argos {
    const CPhysicsModel& CEmbodiedEntity::GetPhysicsModel(const std::string& str_engine_id) const {
       CPhysicsModel::TMap::const_iterator it = m_tPhysicsModelMap.find(str_engine_id);
       if(it == m_tPhysicsModelMap.end()) {
-         THROW_ARGOSEXCEPTION("Entity \"" << GetId() << "\" has no associated entity in physics engine \"" << str_engine_id << "\"");
+         THROW_ARGOSEXCEPTION("Entity \"" << GetContext() << GetId() << "\" has no associated entity in physics engine \"" << str_engine_id << "\"");
       }
       return *(it->second);
    }
@@ -278,7 +306,7 @@ namespace argos {
    CPhysicsModel& CEmbodiedEntity::GetPhysicsModel(const std::string& str_engine_id) {
       CPhysicsModel::TMap::iterator it = m_tPhysicsModelMap.find(str_engine_id);
       if(it == m_tPhysicsModelMap.end()) {
-         THROW_ARGOSEXCEPTION("Entity \"" << GetId() << "\" has no associated entity in physics engine \"" << str_engine_id << "\"");
+         THROW_ARGOSEXCEPTION("Entity \"" << GetContext() << GetId() << "\" has no associated entity in physics engine \"" << str_engine_id << "\"");
       }
       return *(it->second);
    }
@@ -290,6 +318,8 @@ namespace argos {
                                 const CQuaternion& c_orientation,
                                 bool b_check_only) {
       bool bNoCollision = true;
+      CVector3 cOriginalPosition = m_psOriginAnchor->Position;
+      CQuaternion cOriginalOrientation = m_psOriginAnchor->Orientation;
       for(CPhysicsModel::TVector::const_iterator it = m_tPhysicsModelVector.begin();
           it != m_tPhysicsModelVector.end() && bNoCollision; ++it) {
          if(! (*it)->MoveTo(c_position, c_orientation, b_check_only)) {
@@ -297,9 +327,7 @@ namespace argos {
          }
       }
       if(bNoCollision && !b_check_only) {
-         /* Update space position */
-         SetPosition(c_position);
-         SetOrientation(c_orientation);
+         /* Update parent */
          if( HasParent() ) {
             CComposableEntity* pcEntity = dynamic_cast<CComposableEntity*>(&GetParent());
             if( pcEntity != NULL ) {
@@ -312,7 +340,7 @@ namespace argos {
          /* No Collision or check only, undo changes */
          for(CPhysicsModel::TVector::const_iterator it = m_tPhysicsModelVector.begin();
              it != m_tPhysicsModelVector.end(); ++it) {
-            (*it)->MoveTo(GetPosition(), GetOrientation());
+            (*it)->MoveTo(cOriginalPosition, cOriginalOrientation);
          }
          if(!bNoCollision) {
             /* Collision */
@@ -377,7 +405,9 @@ namespace argos {
    bool CEmbodiedEntity::IsCollidingWithSomething() const {
       /* If no model is associated, you can't call this function */
       if(m_tPhysicsModelVector.empty()) {
-         THROW_ARGOSEXCEPTION("CEmbodiedEntity::IsCollidingWithSomething() called on entity \"" << GetId() << "\", but this entity has not been added to any physics engine.");
+         THROW_ARGOSEXCEPTION("CEmbodiedEntity::IsCollidingWithSomething() called on entity \"" <<
+                              GetContext() << GetId() <<
+                              "\", but this entity has not been added to any physics engine.");
       }
       /* Special case: if there is only one model, check that directly */
       if(m_tPhysicsModelVector.size() == 1) {
@@ -399,7 +429,7 @@ namespace argos {
    /****************************************/
    /****************************************/
 
-   bool operator==(const CEmbodiedEntity::SAnchor* ps_anchor,
+   bool operator==(const SAnchor* ps_anchor,
                    const std::string& str_id) {
       return (ps_anchor->Id == str_id);
    }

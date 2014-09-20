@@ -39,6 +39,10 @@ namespace argos {
                       EPUCK_INTERWHEEL_DISTANCE),
       m_fMass(0.4f),
       m_fCurrentWheelVelocity(m_cWheeledEntity.GetWheelVelocities()) {
+      /* Get origin anchor and register its update method */
+      const SAnchor& sOrigin = GetEmbodiedEntity().GetOriginAnchor();
+      RegisterAnchorMethod<CDynamics2DEPuckModel>(sOrigin,
+                                                  &CDynamics2DEPuckModel::UpdateOriginAnchor);
       /* Create the actual body with initial position and orientation */
       m_ptActualBaseBody =
          cpSpaceAddBody(m_cDyn2DEngine.GetPhysicsSpace(),
@@ -47,10 +51,10 @@ namespace argos {
                                                     0.0f,
                                                     EPUCK_RADIUS + EPUCK_RADIUS,
                                                     cpvzero)));
-      const CVector3& cPosition = GetEmbodiedEntity().GetPosition();
+      const CVector3& cPosition = sOrigin.Position;
       m_ptActualBaseBody->p = cpv(cPosition.GetX(), cPosition.GetY());
       CRadians cXAngle, cYAngle, cZAngle;
-      GetEmbodiedEntity().GetOrientation().ToEulerAngles(cZAngle, cYAngle, cXAngle);
+      sOrigin.Orientation.ToEulerAngles(cZAngle, cYAngle, cXAngle);
       cpBodySetAngle(m_ptActualBaseBody, cZAngle.GetValue());
       /* Associate this model to the body data for ray queries */
       m_ptActualBaseBody->data = this;
@@ -65,8 +69,8 @@ namespace argos {
       /* Constrain the actual base body to follow the diff steering control */
       m_cDiffSteering.AttachTo(m_ptActualBaseBody);
       /* Calculate bounding box */
-      GetBoundingBox().MinCorner.SetZ(GetEmbodiedEntity().GetPosition().GetZ());
-      GetBoundingBox().MaxCorner.SetZ(GetEmbodiedEntity().GetPosition().GetZ() + EPUCK_HEIGHT);
+      GetBoundingBox().MinCorner.SetZ(sOrigin.Position.GetZ());
+      GetBoundingBox().MaxCorner.SetZ(sOrigin.Position.GetZ() + EPUCK_HEIGHT);
       CalculateBoundingBox();
    }
 
@@ -79,32 +83,6 @@ namespace argos {
       cpSpaceRemoveShape(m_cDyn2DEngine.GetPhysicsSpace(), m_ptBaseShape);
       cpShapeFree(m_ptBaseShape);
       cpBodyFree(m_ptActualBaseBody);
-   }
-
-   /****************************************/
-   /****************************************/
-
-   bool CDynamics2DEPuckModel::CheckIntersectionWithRay(Real& f_t_on_ray,
-                                                        const CRay3& c_ray) const {
-      cpSegmentQueryInfo tInfo;
-      if(cpShapeSegmentQuery(m_ptBaseShape,
-                             cpv(c_ray.GetStart().GetX(), c_ray.GetStart().GetY()),
-                             cpv(c_ray.GetEnd().GetX()  , c_ray.GetEnd().GetY()  ),
-                             &tInfo)) {
-      	 CVector3 cIntersectionPoint;
-      	 c_ray.GetPoint(cIntersectionPoint, tInfo.t);
-      	 if((cIntersectionPoint.GetZ() >= GetEmbodiedEntity().GetPosition().GetZ()                 ) &&
-      			(cIntersectionPoint.GetZ() <= GetEmbodiedEntity().GetPosition().GetZ() + EPUCK_HEIGHT) ) {
-            f_t_on_ray = tInfo.t;
-            return true;
-      	 }
-      	 else {
-            return false;
-      	 }
-      }
-      else {
-         return false;
-      }
    }
 
    /****************************************/
@@ -144,6 +122,8 @@ namespace argos {
           */
          /* Update the active space hash */
          cpSpaceReindexShape(m_cDyn2DEngine.GetPhysicsSpace(), m_ptBaseShape);
+         /* Update anchors */
+         CalculateAnchors();
          /* Update bounding box */
          CalculateBoundingBox();
       }
@@ -156,11 +136,11 @@ namespace argos {
 
    void CDynamics2DEPuckModel::Reset() {
       /* Reset body position */
-      const CVector3& cPosition = GetEmbodiedEntity().GetInitPosition();
+      const CVector3& cPosition = GetEmbodiedEntity().GetOriginAnchor().Position;
       m_ptActualBaseBody->p = cpv(cPosition.GetX(), cPosition.GetY());
       /* Reset body orientation */
       CRadians cXAngle, cYAngle, cZAngle;
-      GetEmbodiedEntity().GetInitOrientation().ToEulerAngles(cZAngle, cYAngle, cXAngle);
+      GetEmbodiedEntity().GetOriginAnchor().Orientation.ToEulerAngles(cZAngle, cYAngle, cXAngle);
       cpBodySetAngle(m_ptActualBaseBody, cZAngle.GetValue());
       /* Zero speed and applied forces of actual base body */
       m_ptActualBaseBody->v = cpvzero;
@@ -186,31 +166,6 @@ namespace argos {
    /****************************************/
    /****************************************/
 
-   void CDynamics2DEPuckModel::UpdateEntityStatus() {
-      /* Update bounding box */
-      CalculateBoundingBox();
-      /* Update e-puck body position */
-      m_cDyn2DEngine.PositionPhysicsToSpace(m_cSpacePosition, GetEmbodiedEntity().GetPosition(), m_ptActualBaseBody);
-      GetEmbodiedEntity().SetPosition(m_cSpacePosition);
-      /* Update e-puck body orientation */
-      m_cDyn2DEngine.OrientationPhysicsToSpace(m_cSpaceOrientation, m_ptActualBaseBody);
-      GetEmbodiedEntity().SetOrientation(m_cSpaceOrientation);
-      /* Update e-puck components */
-      m_cEPuckEntity.UpdateComponents();
-      /* Check whether a transfer is necessary */
-      if(m_cDyn2DEngine.IsEntityTransferActive()) {
-         std::string strEngineId;
-         if(m_cDyn2DEngine.CalculateTransfer(GetEmbodiedEntity().GetPosition().GetX(),
-                                             GetEmbodiedEntity().GetPosition().GetY(),
-                                             strEngineId)) {
-            m_cDyn2DEngine.ScheduleEntityForTransfer(m_cEPuckEntity, strEngineId);
-         }
-      }
-   }
-
-   /****************************************/
-   /****************************************/
-
    void CDynamics2DEPuckModel::UpdateFromEntityStatus() {
       /* Do we want to move? */
       if((m_fCurrentWheelVelocity[EPUCK_LEFT_WHEEL] != 0.0f) ||
@@ -229,6 +184,15 @@ namespace argos {
 
    bool CDynamics2DEPuckModel::IsCollidingWithSomething() const {
       return cpSpaceShapeQuery(m_cDyn2DEngine.GetPhysicsSpace(), m_ptBaseShape, NULL, NULL) > 0;
+   }
+
+   /****************************************/
+   /****************************************/
+
+   void CDynamics2DEPuckModel::UpdateOriginAnchor(SAnchor& s_anchor) {
+      s_anchor.Position.SetX(m_ptActualBaseBody->p.x);
+      s_anchor.Position.SetY(m_ptActualBaseBody->p.y);
+      s_anchor.Orientation.FromAngleAxis(CRadians(m_ptActualBaseBody->a), CVector3::Z);
    }
 
    /****************************************/
