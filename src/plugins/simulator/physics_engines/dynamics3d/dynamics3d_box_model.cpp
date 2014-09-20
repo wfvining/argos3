@@ -33,8 +33,8 @@ namespace argos {
                                                      cBoxGeometricOffset,
                                                      fMass));
       /* move the model to the specified coordinates */
-      SetModelCoordinates(btTransform(ARGoSToBullet(GetEmbodiedEntity().GetInitOrientation()),
-                                      ARGoSToBullet(GetEmbodiedEntity().GetInitPosition())));
+      SetModelCoordinates(btTransform(ARGoSToBullet(GetEmbodiedEntity().GetOriginAnchor().Orientation),
+                                      ARGoSToBullet(GetEmbodiedEntity().GetOriginAnchor().Position)));
    }
    
    /****************************************/
@@ -49,12 +49,7 @@ namespace argos {
 
    void CDynamics3DBoxModel::UpdateEntityStatus() {
       if(m_cBoxEntity.GetEmbodiedEntity().IsMovable()) {      
-         const btTransform& cUpdateTransform = GetModelCoordinates();
-         //fprintf(stderr, "Box::UpdateTransform position = [%f, %f, %f]\n", cUpdateTransform.getOrigin().getX(), cUpdateTransform.getOrigin().getY(), cUpdateTransform.getOrigin().getZ());
-
-         GetEmbodiedEntity().SetPosition(BulletToARGoS(cUpdateTransform.getOrigin()));
-         GetEmbodiedEntity().SetOrientation(BulletToARGoS(cUpdateTransform.getRotation()));
-         m_cBoxEntity.UpdateComponents();
+         CPhysicsModel::UpdateEntityStatus();
      }
    }
 
@@ -63,6 +58,14 @@ namespace argos {
 
    btTransform CDynamics3DBoxModel::GetModelCoordinates() const {
       return m_vecLocalBodies[0]->GetMotionStateTransform();
+   }
+
+   /****************************************/
+   /****************************************/
+
+   void CDynamics3DBoxModel::UpdateOriginAnchor(SAnchor& s_anchor) {
+      s_anchor.Position = BulletToARGoS(GetModelCoordinates().getOrigin());
+      s_anchor.Orientation = BulletToARGoS(GetModelCoordinates().getRotation());
    }
 
    /****************************************/

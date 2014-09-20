@@ -28,6 +28,8 @@ namespace argos {
 
       virtual void UpdateEntityStatus();
       virtual void UpdateFromEntityStatus() {}
+
+      void UpdateOriginAnchor(SAnchor& s_anchor);
  
    protected:
       

@@ -67,10 +67,6 @@ namespace argos {
                           bool b_check_only = false);
 
       virtual void Reset();
-      
-      virtual void UpdateEntityStatus() = 0;
-
-      virtual void UpdateFromEntityStatus() = 0;
 
       const std::string& GetId() const {
          return m_strId;
