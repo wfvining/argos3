@@ -54,6 +54,50 @@ namespace argos {
             Entity(NULL) {}
       };
 
+private:
+
+      class CBoxShapeManager {
+      public:
+         btBoxShape* RequestShape(const btVector3& c_half_extents);
+         void ReleaseShape(const btBoxShape* pc_release);
+      private:
+         struct CResource {
+            CResource(const btVector3& c_half_extents, btBoxShape* c_shape);
+            btVector3 m_cHalfExtents;
+            btBoxShape* m_cShape;
+            UInt32 m_unInUseCount;
+         };
+         std::vector<CResource> m_vecResources;
+      };
+
+      class CCylinderShapeManager {
+      public:
+         btCylinderShape* RequestShape(const btVector3& c_half_extents);
+         void ReleaseShape(const btCylinderShape* pc_release);
+      private:
+         struct CResource {
+            CResource(const btVector3& c_half_extents, btCylinderShape* c_shape);
+            btVector3 m_cHalfExtents;
+            btCylinderShape* m_cShape;
+            UInt32 m_unInUseCount;
+         };
+         std::vector<CResource> m_vecResources;
+      };
+
+      class CSphereShapeManager {
+      public:
+         btSphereShape* RequestShape(Real f_radius);
+         void ReleaseShape(const btSphereShape* pc_release);
+      private:
+         struct CResource {
+            CResource(Real f_radius, btSphereShape* c_shape);
+            Real m_fRadius;
+            btSphereShape* m_cShape;
+            UInt32 m_unInUseCount;
+         };
+         std::vector<CResource> m_vecResources;
+      };
+
    public:
       
       CDynamics3DEngine();
@@ -82,6 +126,17 @@ namespace argos {
          return m_vecPhysicsModels;
       }
       
+      CBoxShapeManager& GetBoxShapeManager() {
+         return m_cBoxShapeManager;
+      }
+
+      CCylinderShapeManager& GetCylinderShapeManager() {
+         return m_cCylinderShapeManager;
+      }
+
+      CSphereShapeManager& GetSphereShapeManager() {
+         return m_cSphereShapeManager;
+      }
 
       virtual bool IsPointContained(const CVector3& c_point);
       virtual void TransferEntities();
@@ -105,7 +160,7 @@ namespace argos {
       void RemoveBodiesFromModel(CDynamics3DModel& c_model);
 
    private:
-
+      /* Vectors for models and loaded plugins */
       std::vector<CDynamics3DModel*> m_vecPhysicsModels;
       std::vector<CDynamics3DPlugin*> m_vecPhysicsPlugins;
 
@@ -113,20 +168,25 @@ namespace argos {
       CRandom::CRNG* m_pcRNG;
       CRange<UInt32> m_cRandomSeedRange;
      
-      /* Bullet Physics World Data */
+      /* Bullet Physics world Data */
       btBroadphaseInterface*                 m_pcBroadphaseInterface;
       btDefaultCollisionConfiguration*       m_pcCollisionConfiguration;
       btCollisionDispatcher*                 m_pcCollisionDispatcher;
       btSequentialImpulseConstraintSolver*   m_pcSolver;
       btDiscreteDynamicsWorld*               m_pcWorld;
       
-      /* Dynamics 3D Ground */
+      /* Dynamics3D ground */
       static btStaticPlaneShape              m_cGroundCollisionShape;
       CDynamics3DBody*                       m_pcGround;
 
       /* Dynamics 3D iterations per pick and iteration length */
       UInt32 m_unIterations;
       Real m_fDeltaT;
+
+      /* Shape managers for sharing btCollisionShapes */
+      static CBoxShapeManager m_cBoxShapeManager;
+      static CCylinderShapeManager m_cCylinderShapeManager;
+      static CSphereShapeManager m_cSphereShapeManager;
       
       /* Transfer entity mechanism data */
       /* @todo create a 3D implementation - at the moment, only prisms with infinite height are supported */

@@ -370,7 +370,7 @@ set(ARGOS3_HEADERS_PLUGINS_SIMULATOR_PHYSICS_ENGINES_DYNAMICS3D
   dynamics3d_joint.h
   dynamics3d_plugin.h
   dynamics3d_box_model.h
-#  dynamics3d_cylinder_model.h
+  dynamics3d_cylinder_model.h
   dynamics3d_model.h
   dynamics3d_engine.h)
 # Headers of the sphere entity (provided by the dynamics3d engine)
@@ -387,7 +387,7 @@ set(ARGOS3_SOURCES_PLUGINS_SIMULATOR_PHYSICS_ENGINES_DYNAMICS3D
   dynamics3d_joint.cpp
   dynamics3d_plugin.cpp
   dynamics3d_box_model.cpp
-#  dynamics3d_cylinder_model.cpp
+  dynamics3d_cylinder_model.cpp
   dynamics3d_model.cpp
   dynamics3d_engine.cpp)
 # Sphere entity source files (provided by the dynamics3d engine)
