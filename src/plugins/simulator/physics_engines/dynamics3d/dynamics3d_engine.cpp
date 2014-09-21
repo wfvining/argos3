@@ -521,7 +521,7 @@ namespace argos {
           ++itResource) {
          if(itResource->m_cHalfExtents == c_half_extents) break;
       }      
-      // if it doesn't exist, create a new one
+      /* if it doesn't exist, create a new one */
       if(itResource == m_vecResources.end()) {
          itResource = m_vecResources.insert(itResource, 
                                             CResource(c_half_extents, new btBoxShape(c_half_extents)));
@@ -540,9 +540,9 @@ namespace argos {
           ++itResource) {
          if(itResource->m_cShape == pc_release) break;
       }
-      // if it doesn't exist, throw an exception
+      /* if it doesn't exist, throw an exception */
       if(itResource == m_vecResources.end()) {
-         THROW_ARGOSEXCEPTION("Attempt to release unknown btBoxShape from the box shape manager!");
+         THROW_ARGOSEXCEPTION("Attempt to release unknown btBoxShape from the box shape manager.");
       }
       itResource->m_unInUseCount--;
       if(itResource->m_unInUseCount == 0) {
@@ -570,7 +570,7 @@ namespace argos {
           ++itResource) {
          if(itResource->m_cHalfExtents == c_half_extents) break;
       }      
-      // if it doesn't exist, create a new one
+      /* if it doesn't exist, create a new one */
       if(itResource == m_vecResources.end()) {
          itResource = m_vecResources.insert(itResource, 
                                             CResource(c_half_extents, new btCylinderShape(c_half_extents)));
@@ -582,7 +582,6 @@ namespace argos {
    /****************************************/
    /****************************************/
 
-  
    void CDynamics3DEngine::CCylinderShapeManager::ReleaseShape(const btCylinderShape* pc_release) {
       std::vector<CResource>::iterator itResource;      
       for(itResource = m_vecResources.begin();
@@ -590,9 +589,9 @@ namespace argos {
           ++itResource) {
          if(itResource->m_cShape == pc_release) break;
       }
-      // if it doesn't exist, throw an exception
+      /* if it doesn't exist, throw an exception */
       if(itResource == m_vecResources.end()) {
-         THROW_ARGOSEXCEPTION("Attempt to release unknown btCylinderShape from the cylinder shape manager!");
+         THROW_ARGOSEXCEPTION("Attempt to release unknown btCylinderShape from the cylinder shape manager.");
       }
       itResource->m_unInUseCount--;
       if(itResource->m_unInUseCount == 0) {
@@ -620,7 +619,7 @@ namespace argos {
           ++itResource) {
          if(itResource->m_fRadius == f_radius) break;
       }      
-      // if it doesn't exist, create a new one
+      /* if it doesn't exist, create a new one */
       if(itResource == m_vecResources.end()) {
          itResource = m_vecResources.insert(itResource, 
                                             CResource(f_radius, new btSphereShape(f_radius)));
@@ -639,9 +638,9 @@ namespace argos {
           ++itResource) {
          if(itResource->m_cShape == pc_release) break;
       }
-      // if it doesn't exist, throw an exception
+      /* if it doesn't exist, throw an exception */
       if(itResource == m_vecResources.end()) {
-         THROW_ARGOSEXCEPTION("Attempt to release unknown btSphereShape from the sphere shape manager!");
+         THROW_ARGOSEXCEPTION("Attempt to release unknown btSphereShape from the sphere shape manager.");
       }
       itResource->m_unInUseCount--;
       if(itResource->m_unInUseCount == 0) {
