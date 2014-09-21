@@ -5,7 +5,7 @@
   <!-- * General configuration * -->
   <!-- ************************* -->
   <framework>
-    <experiment threads="2" length="0" ticks_per_second="100" />
+    <experiment threads="2" length="0" ticks_per_second="20" />
   </framework>
 
   <!--loop_functions label="dyn3d_testbench_loop_functions" /-->
@@ -32,13 +32,13 @@
     </box>
     <box id="bw" size="5, 0.1, 0.2" movable="false" mass="1">
       <body position="0,2.5,0"  orientation="0,0,0"/>
-      <!--leds medium="leds">
+      <leds medium="leds">
          <led position="0,-0.075,0.2" color="blue"/>
-      </leds-->
+      </leds>
     </box>
 
     <box id="test_box2" size="0.05, 0.05, 0.05" movable="true" mass="5">
-      <body position="0.01,0.01,1"  orientation="0,0,0"/>
+      <body position="0.01,0.01,1"  orientation="30,30,10"/>
     </box>
     
     <!--box id="test_box" size="0.1, 0.1, 0.1" movable="true" mass="5">

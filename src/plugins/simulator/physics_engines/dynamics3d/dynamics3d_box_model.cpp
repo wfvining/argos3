@@ -17,7 +17,10 @@ namespace argos {
                                             CBoxEntity& c_box) :
       CDynamics3DModel(c_engine, c_box.GetEmbodiedEntity(), c_box.GetId()),
       m_cBoxEntity(c_box) {
-      
+      /* Get origin anchor and register its update method */
+      const SAnchor& sOrigin = GetEmbodiedEntity().GetOriginAnchor();
+      RegisterAnchorMethod<CDynamics3DBoxModel>(sOrigin,
+                                                &CDynamics3DBoxModel::UpdateOriginAnchor);
       /* When defining size of objects we must manually swap the Z and Y components */
       m_pcBoxCollisionShape = m_cBoxShapeManager.RequestBoxShape(btVector3(c_box.GetSize().GetX() * 0.5f,
                                                                            c_box.GetSize().GetZ() * 0.5f, 
