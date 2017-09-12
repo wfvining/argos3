@@ -1,6 +1,7 @@
 #include "tcp_socket.h"
 
 #include <argos3/core/utility/string_utilities.h>
+#include <argos3/core/config.h>
 
 #include <arpa/inet.h>
 #include <cstring>
@@ -9,6 +10,9 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#if defined (HAVE_NETINET_IN_H)
+#include <netinet/in.h>
+#endif
 
 namespace argos {
 

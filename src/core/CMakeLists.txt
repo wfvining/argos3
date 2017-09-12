@@ -202,7 +202,7 @@ endif(ARGOS_WITH_LUA)
 add_library(argos3core_${ARGOS_BUILD_FOR} SHARED ${ARGOS3_SOURCES_CORE})
 # Link DLFCN library if necessary
 if(ARGOS_DYNAMIC_LIBRARY_LOADING)
-  target_link_libraries(argos3core_${ARGOS_BUILD_FOR} ${DLFCN_LIBRARY})
+  target_link_libraries(argos3core_${ARGOS_BUILD_FOR} ${CMAKE_DL_LIBS})
 endif(ARGOS_DYNAMIC_LIBRARY_LOADING)
 # Link PThreads library if necessary
 if(PTHREADS_FOUND)

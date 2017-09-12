@@ -33,17 +33,6 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 endif()
 
 #
-# Check for dynamic library loading facility
-#
-if(ARGOS_DYNAMIC_LIBRARY_LOADING)
-  find_package(DLFCN)
-  if(NOT DLFCN_FOUND)
-    message(FATAL_ERROR "Required library dl not found.")
-  endif(NOT DLFCN_FOUND)
-  include_directories(${DLFCN_INCLUDE_DIR})
-endif(ARGOS_DYNAMIC_LIBRARY_LOADING)
-
-#
 # Check for PThreads
 # It is required only when compiling the simulator
 #
@@ -131,3 +120,8 @@ if(ARGOS_BUILD_FOR_SIMULATOR)
   endif(CMAKE_SIZEOF_VOID_P EQUAL 4)
   link_directories(${CMAKE_SOURCE_DIR}/plugins/simulator/physics_engines/physx/physx_dist/lib/${PHYSX_ARCH})
 endif(ARGOS_BUILD_FOR_SIMULATOR)
+
+include(CheckIncludeFile)
+check_include_file(netinet/in.h HAVE_NETINET_IN_H)
+
+link_directories(/usr/local/lib)

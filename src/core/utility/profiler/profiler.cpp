@@ -172,7 +172,7 @@ namespace argos {
    void CProfiler::CollectThreadResourceUsage() {
       pthread_mutex_lock(&m_tThreadResourceUsageMutex);
       ::rusage tResourceUsage;
-#ifdef __APPLE__
+#if defined (__APPLE__) || defined (__FreeBSD__)
       /* FIXME: This is badly broken, but I don't know how to obtain
 	 the equivalent of RUSAGE_THREAD on MacOS. --tc */
       getrusage(RUSAGE_SELF, &tResourceUsage);
@@ -201,7 +201,7 @@ namespace argos {
       DumpResourceUsageHumanReadable(m_cOutFile, m_tResourceUsageEnd);
       m_cOutFile << std::endl << "[process overall]" << std::endl << std::endl;
       ::rusage tResourceUsage;
-#ifdef __APPLE__
+#if defined (__APPLE__) || defined (__FreeBSD__)
       getrusage(RUSAGE_SELF, &tResourceUsage);
 #else
       ::getrusage(::RUSAGE_SELF, &tResourceUsage);
@@ -233,7 +233,7 @@ namespace argos {
       DumpResourceUsageAsTableRow(m_cOutFile, m_tResourceUsageEnd);
       m_cOutFile << std::endl << "Overall 0 0 ";
       ::rusage tResourceUsage;
-#ifdef __APPLE__
+#if defined (__APPLE__) || defined (__FreeBSD__)
       getrusage(RUSAGE_SELF, &tResourceUsage);
 #else
       ::getrusage(::RUSAGE_SELF, &tResourceUsage);
@@ -267,7 +267,7 @@ namespace argos {
    /****************************************/
 
    void CProfiler::StartCPUProfiler() {
-#ifdef __APPLE__
+#if defined (__APPLE__) || defined (__FreeBSD__)
       getrusage(RUSAGE_SELF, &m_tResourceUsageStart);
 #else
       ::getrusage(::RUSAGE_SELF, &m_tResourceUsageStart);
@@ -278,7 +278,7 @@ namespace argos {
    /****************************************/
 
    void CProfiler::StopCPUProfiler() {
-#ifdef __APPLE__
+#if defined (__APPLE__) || defined (__FreeBSD__)
       getrusage(RUSAGE_SELF, &m_tResourceUsageEnd);
 #else
       ::getrusage(::RUSAGE_SELF, &m_tResourceUsageEnd);

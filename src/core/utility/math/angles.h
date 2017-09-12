@@ -539,7 +539,10 @@ namespace argos {
 
 #undef ARGOS_SINCOS
 #ifdef ARGOS_USE_DOUBLE
-#  ifndef __APPLE__
+#  ifdef __FreeBSD__
+#    define USE_RPL_SINCOS
+#    define ARGOS_SINCOS rpl_sincos
+#  elif defined __APPLE__
 #    define ARGOS_SINCOS ::sincos
 #  else
 #    define ARGOS_SINCOS ::__sincos
@@ -562,6 +565,13 @@ namespace argos {
 #  define ARGOS_ACOS   ::acosf
 #  define ARGOS_TAN    ::tanf
 #  define ARGOS_ATAN2  ::atan2f
+#endif
+
+#ifdef USE_RPL_SINCOS
+   inline void rpl_sincos(const double x, Real *f_sin, Real *f_cos) {
+      *f_sin = ::sin(x);
+      *f_cos = ::cos(x);
+   }
 #endif
 
 #ifdef ARGOS_SINCOS

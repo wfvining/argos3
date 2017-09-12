@@ -40,6 +40,9 @@ using std::unordered_map;
 #  include <tr1/unordered_map>
 using std::tr1::unordered_map;
 # endif
+#elif defined(__FreeBSD__)
+#include <unordered_map>
+using std::unordered_map;
 #else
 // We are on Linux, use c++03 standard
 # include <tr1/unordered_map>

@@ -18,6 +18,8 @@
 #  define ARGOS_MODULE_LIBRARY_EXTENSION "@ARGOS_MODULE_LIBRARY_EXTENSION@"
 #endif
 
+#cmakedefine HAVE_NETINET_IN_H
+
 /*
  * Install prefix for ARGoS
  */
